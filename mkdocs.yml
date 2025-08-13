@@ -1,1 +1,4 @@
-site_name: My Docs
+site_name: SIDM-vdSigmas
+site_url: https://mtryan83.github.io/sidm-vdsigmas
+theme:
+  name: material
