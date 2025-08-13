@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it using these metadata.
+title: 'SIDM-vdSigma'
+date-released: 2025-08-12
+identifiers:
+- type: doi
+  value:
+authors:
+- given-names: Michael
+  family-names: Ryan
+  affiliation: University of California - Irvine
+  orcid: https://orcid.org/0000-0002-0378-5195
+  alias: mtryan83
+repository-code: https://github.com/mtryan83/sidm-vdsigma
+license: MIT
