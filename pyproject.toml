@@ -18,6 +18,11 @@ dependencies = [
 ]
 dynamic = ["version","readme"]
 
+[project.optional-dependencies]
+docs = [
+  "mkdocs-material"
+]
+
 [project.urls]
 home = "https://github.com/mtryan83/sidm-vdsigmas"
 source = "https://github.com/mtryan83/sidm-vdsigmas"
