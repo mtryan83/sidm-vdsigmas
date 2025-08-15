@@ -21,7 +21,7 @@ dynamic = ["version","readme"]
 
 [project.optional-dependencies]
 dev = ["pre-commit"]
-tests = [dev,"pytest", "pytest-cov"]
+tests = ["dev", "pytest", "pytest-cov"]
 
 [project.urls]
 home = "https://github.com/mtryan83/sidm-vdsigmas"
