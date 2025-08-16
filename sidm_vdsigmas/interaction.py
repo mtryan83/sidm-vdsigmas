@@ -401,5 +401,35 @@ class Interaction(object):
 
     @abc.abstractmethod
     def hat(self,x):
+        r"""Compute the value of the dimensionless component of the cross section at the specified dimensionless velocity
+
+        If the cross section can be defined as 
+        :math:`\sigma(v) = \sigma_0 \hat{\sigma}(v/v_0)` where :math:`\sigma_0`
+        contains all the dimensionful information and :math:`v_0` is the 
+        velocity scale such that :math:`x=\frac{v}{v_0}`, this function 
+        computes :math:`\hat{\sigma}(x)`.
+        
+        Abstract function which must be overwritten by child classes.
+        Note that it is expected either this method or :doc:`__call__` will be a
+        wrapper of the other in most cases. For example:
+        .. code::
+            # in a subclass
+            def __call__(self,v):
+                return 5 * self.sigunit / (1 + v/self.v0)**2
+
+            def hat(self,x):
+                return self(self.v0 * x)/self.sigconst
+
+        Inputs:
+            v: unyt_quantity | unyt_array
+            Velocity to calculate at
+
+        Returns:
+            unyt_quantity | unyt_array
+            Value of the cross section at the specified velocity. Will have same shape as v
+
+        Raises:
+            NotImplementedError if not called on a subclass
+        """
         raise NotImplementedError('Needs to be defined in subclass')
 
