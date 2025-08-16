@@ -18,8 +18,9 @@ sigunit = unyt_quantity(1,'cm**2/g')
 class Interaction(object):
     def __init__(self,*,
                  m=None,mphi=None,alphaX=None,
-                 w=None,sigconst=None,
-                 sidm=None
+                 sigconst=None,w=None,
+                 sidm=None,
+                 disable_warning=False,
                 ):
         self.sidm = None
         if sidm is not None:
@@ -30,7 +31,16 @@ class Interaction(object):
             self.sidm = sidm
         self.m=m
         self.mphi=mphi
+        alphaX = alphaX if alphaX is not None else 1
         self.alphaX=alphaX
+        if sigconst is not None and not isinstance(sigconst,(unyt_array,unyt_quantity)):
+            # if sigconst and w are supplied, but *neither* have units
+            # assume *both* should have units
+            if w is not None and not isinstance(w,(unyt_array,unyt_quantity)):
+                w = unyt_quantity(w,'km/s')
+                if not disable_warning:
+                    print('Neither sigconst nor w had units. Assuming both should.')
+            sigconst = sigconst * sigunit
         if m is not None and mphi is not None and alphaX is not None:
             w = mphi/m
             sigconst = (hbar/c0)**2 * np.pi * alphaX**2/(w**2 * m**3)
