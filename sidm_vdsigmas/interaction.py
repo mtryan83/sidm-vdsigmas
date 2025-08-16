@@ -307,10 +307,24 @@ class Interaction(object):
         return 10**self.xofnspl(n)
 
     def dim_sigma_hat(self,what,*,C=0.6):
-        '''
-        Eq 8 from Gad-Nasr (dimensionful cross section)
-        Basically, just doesn't do the M/4*pi*r**2 scaling
-        '''
+        """Compute the dimensionful effective cross section 
+        
+        Compute Eq 8 from Gad-Nasr (dimensionful cross section) but without 
+        the M/4*pi*r**2 scaling. This is the effective cross section in normal
+        length^2/mass units.
+
+        Inputs:
+            what: float | array
+            Dimensionless velocity, defined as v/self.v0
+
+            C: float, optional
+            Calibration parameter. See Gad-Nasr for details. Default is 0.6
+            
+        Returns:
+            unyt_quantity | unyt_array
+            The dimensionfull effective cross section with the same shape as
+            what
+        """
         K5 = self.K5(what)
         Keff = self.Keff(what)
         sigma0om = self.sigconst
