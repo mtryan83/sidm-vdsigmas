@@ -60,7 +60,8 @@ class Interaction(object):
 
     @classmethod
     @cache
-    def getGLstuff(cls,n=20,alpha=3,mu=True):
+    def _getGLstuff(cls,n=20,alpha=3,mu=True):
+        """Return (cached) roots from scipy.special General Gauss-Laguerre function"""
         return special.roots_genlaguerre(n,alpha,mu)
 
     def Kn(self,x_s,n=5,*,N=20):
@@ -77,9 +78,7 @@ class Interaction(object):
         sum(wgts)=mu
         '''
         alpha = (n+1)/2
-        loc,wgt,mu = Interaction.getGLstuff(n=N,alpha=alpha,mu=True) 
-        # for x,w in zip(loc,wgt):
-        #     print(x,w)
+        loc,wgt,mu = Interaction._getGLstuff(n=N,alpha=alpha,mu=True) 
         cross = 0
         for x,w in zip(loc,wgt): # 2*sqrt(x) = v/v1d; p1v = alpha*c/v = p1*v1d/v = p1/(2*np.sqrt(x))
             cross += w*self.hat(2*x_s*np.sqrt(x))
