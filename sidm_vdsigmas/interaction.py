@@ -1,11 +1,16 @@
 import abc
 import numpy as np
 
+from functools import cache
+
 import scipy.special as special
 import scipy.interpolate as interpolate
 
-from unyt import unyt_array,unyt_quantity
-from unyt.dimensions import length,mass
+from unyt import (unyt_array, unyt_quantity, speed_of_light as c0, 
+                    reduced_planck_constant as hbar, gravitational_constant as G0)
+from unyt.dimensions import length,dimensionless
+
+from .sidm import SIDM
 
 
 
