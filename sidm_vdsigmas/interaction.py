@@ -180,6 +180,18 @@ class Interaction(object):
         return cross/mu
 
     def K5(self,x_s):
+        """Compute the quantity K_5
+
+        Shortcut version of :code:`K_n(x_s,n=5)`
+
+        Inputs:
+            x_s: float | array
+            Scaled, dimensionless velocity, e.g. v/self.v_0
+
+        Returns:
+            float | array
+            The quantity K_5 evaluated at x_s
+        """
         # For some reason these appear to be off. Multiplying v_s by 0.8233 helps
         return self.Kn(0.8233*x_s,n=5)
 
