@@ -219,7 +219,7 @@ class Interaction(object):
         return (28*K5**2 + 80*K5*K9 - 64*K7**2)/(77*K5 - 112*K7 + 80*K9)
 
     def _gen_n_splines(self,):
-        # generate interpolating spline
+        """Generate and cache interpolating splines"""
         x = np.logspace(-3,3)
         logK5 = np.log10(self.K5(x))
         logKeff = np.log10(self.Keff(x))
