@@ -14,6 +14,7 @@ license-files = ["LICENSE.txt"]
 dependencies = [
   "numpy >= 2",
   "scipy >= 1.4",
+  "unyt >= 3",
 ]
 dynamic = ["version","readme"]
 

@@ -1,0 +1,170 @@
+import abc
+import numpy as np
+
+import scipy.special as special
+import scipy.interpolate as interpolate
+
+from unyt import unyt_array,unyt_quantity
+from unyt.dimensions import length,mass
+
+
+
+class Interaction(object):
+    def __init__(self,*,
+                 m=None,mphi=None,alphaX=None,
+                 w=None,sigconst=None,
+                 sidm=None
+                ):
+        self.sidm = None
+        if sidm is not None:
+            m = sidm.mX
+            mphi = sidm.mphi
+            alphaX = sidm.alphaX
+            w = sidm.w
+            self.sidm = sidm
+        self.m=m
+        self.mphi=mphi
+        self.alphaX=alphaX
+        if m is not None and mphi is not None and alphaX is not None:
+            w = mphi/m
+            sigconst = (hbar/c0)**2 * np.pi * alphaX**2/(w**2 * m**3)
+        if isinstance(w,(unyt_array,unyt_quantity)) and w.units != dimensionless:
+            self.v0 = w
+            w = w/c0
+        else:
+            self.v0 = w*c0
+        if m is None:
+            self.m = (((hbar/c0)**2 * np.pi*alphaX**2/(w**2*sigconst))**(1/3)).to('GeV/c**2')
+        if mphi is None:
+            self.mphi = w * self.m
+        self.w = w
+        if self.sidm is None:
+            self.sidm = SIDM(mX=self.m,mphi=self.mphi,alphaX=self.alphaX,w=self.w)
+        sigconst = sigconst.to('cm**2') if sigconst.units.dimensions/length**2==1 else sigconst.to('cm**2/g')
+        self.sigconst = sigconst
+
+    @property
+    @abc.abstractproperty
+    def name(self):
+        raise NotImplementedError('Defined by implemented class!')
+
+    @property
+    @abc.abstractproperty
+    def file_name(self):
+        raise NotImplementedError('Defined by implemented class!')
+
+    @classmethod
+    @cache
+    def getGLstuff(cls,n=20,alpha=3,mu=True):
+        return special.roots_genlaguerre(n,alpha,mu)
+
+    def Kn(self,x_s,n=5,*,N=20):
+        '''
+        Gauss-Laguerre for averaging over crosssection*v^5
+        p1 = alpha*c/v_s; p2 = alpha*c/w; cross_func takes inputs p1 and p2;
+        
+        Quadrature for Integral dx x^3 exp(-x) function(x) = Sum[wgt[i]*function(loc[i]),{i,1,N}]
+        We need Integral dv v^5 v^2 exp(-v^2/(4 v_s^2)) cross(v) / (same integral without cross(v))
+        This can be rewritten as Integral dx x^3 exp(-x) cross(v = 2 v_s sqrt(x)) / 6, 
+        where x = (v/v_s)^2 / 4 
+    
+        This holds true for v^p as long as we change x^3 -> x^alpha, where alpha=(p+1)/2 and 6 -> 
+        sum(wgts)=mu
+        '''
+        alpha = (n+1)/2
+        loc,wgt,mu = Interaction.getGLstuff(n=N,alpha=alpha,mu=True) 
+        # for x,w in zip(loc,wgt):
+        #     print(x,w)
+        cross = 0
+        for x,w in zip(loc,wgt): # 2*sqrt(x) = v/v1d; p1v = alpha*c/v = p1*v1d/v = p1/(2*np.sqrt(x))
+            cross += w*self.hat(2*x_s*np.sqrt(x))
+        return cross/mu
+
+    def K5(self,x_s):
+        # For some reason these appear to be off. Multiplying v_s by 0.8233 helps
+        return self.Kn(0.8233*x_s,n=5)
+
+    def Keff(self,x_s):
+        x_s = x_s*0.8233
+        K5 = self.Kn(x_s)
+        K7 = self.Kn(x_s,n=7)
+        K9 = self.Kn(x_s,n=9)
+        return (28*K5**2 + 80*K5*K9 - 64*K7**2)/(77*K5 - 112*K7 + 80*K9)
+
+    def _gen_n_splines(self,):
+        # generate interpolating spline
+        x = np.logspace(-3,3)
+        logK5 = np.log10(self.K5(x))
+        logKeff = np.log10(self.Keff(x))
+        logx = np.log10(x)
+        K5spl = interpolate.CubicSpline(logx,logK5)
+        Keffspl = interpolate.CubicSpline(logx,logKeff)
+        self.dlogK5dlogx = K5spl.derivative()
+        self.dlogKeffdlogx = Keffspl.derivative()
+        ns,nuinds = np.unique(np.maximum(-self.dlogK5dlogx(logx),1e-5),return_index=True)
+        self.xofnspl = interpolate.CubicSpline(ns,logx[nuinds])
+    
+    def n(self,x_s=None,*,use_K5=True,v_s=None):
+        if v_s is not None:
+            x_s = v_s/self.v0
+        if x_s is None:
+            raise TypeError('Either x_s (preferred) or v_s must be provided')
+        if not hasattr(self,'dlogK5dlogx'):
+            self._gen_n_splines()
+        # need n = -dlogK/dlogx
+        logxs = np.log10(x_s)
+        n = -self.dlogK5dlogx(logxs) if use_K5 else -self.dlogKeffdlogx(logxs)
+        return np.maximum(n,1e-5)
+
+    def dndv(self,x_s,*,use_K5=True):
+        if not hasattr(self,'dn5dv'):
+            # generate spline derivative of n
+            if not hasattr(self,'dlogk5dlox'):
+                # need to generate n splines
+                self.n(x_s)
+            self.dn5dv = self.dlogK5dlogx.derivative()
+            self.dneffdv = self.dlogKeffdlogx.derivative()
+        logxs = np.log10(x_s)
+        dndv = self.dn5dv(logxs) if use_K5 else self.dneffdv(logxs)
+        return dndv
+
+    def x(self,n):
+        '''
+        Given a value of n, find the corresponding value of x=v/w that provides it
+        '''
+        if not hasattr(self,'xofnspl'):
+            self._gen_n_splines()
+        return 10**self.xofnspl(n)
+
+    def dim_sigma_hat(self,what,*,C=0.6):
+        '''
+        Eq 8 from Gad-Nasr (dimensionful cross section)
+        Basically, just doesn't do the M/4*pi*r**2 scaling
+        '''
+        K5 = self.K5(what)
+        Keff = self.Keff(what)
+        sigma0om = self.sigconst
+        a = 4/np.sqrt(np.pi)
+        b = 25/32*np.sqrt(np.pi)
+        return np.sqrt(a*C/b * K5 * Keff) * sigma0om
+    
+    def sigma_hat_fun(self,what,*,vn=None,rhon=None,Mn=None,rn=None,C=0.6):
+        '''
+        Eq 8 from Gad-Nasr (dimensionless cross section)
+        '''
+        part1 = self.dim_sigma_hat(what,C=C)
+        if Mn is not None:
+            return (part1 * (Mn/(4*np.pi*rn**2))).to('dimensionless').v
+        return  (part1 * np.sqrt(rhon/(4*np.pi*G0))*vn).to('dimensionless').v
+
+    def __repr__(self):
+        return f'{self.name}(w={self.v0.to("km/s"):4}, σ0/m={self.sigconst.to("cm**2/g"):.5})'
+
+    @abc.abstractmethod
+    def __call__(self,v):
+        raise NotImplementedError('Needs to be defined in subclass')
+
+    @abc.abstractmethod
+    def hat(self,x):
+        raise NotImplementedError('Needs to be defined in subclass')
+
