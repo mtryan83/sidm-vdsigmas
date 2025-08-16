@@ -232,6 +232,27 @@ class Interaction(object):
         self.xofnspl = interpolate.CubicSpline(ns,logx[nuinds])
     
     def n(self,x_s=None,*,use_K5=True,v_s=None):
+        r"""Compute the negative log derivative of K_n(v) or K_n(x)
+
+        Compute the negative log derivative of either K_5(x_s) or K_eff(x_s)
+        using a scipy.interpolate.CubicSpline fit. The spline fits are cached.
+
+        Inputs:
+            x_s: float | array, optional
+            Scaled, dimensionless velocity, e.g. v/self.v_0. Must provide one
+            of x_s, v_s. If x_s is not provided, x_s = v_s/self.v0
+
+            use_K5: bool, optional
+            If True, K_n is K_5. If False, K_n is K_eff. Default True
+
+            v_s: float | array, optional
+            Velocity. If both x_s and v_s are provided, prefer v_s. Must
+            provide one of x_s, v_s.
+
+        Returns:
+            float | array
+            The negative log derivative of K_n evaluated at x_s
+        """
         if v_s is not None:
             x_s = v_s/self.v0
         if x_s is None:
