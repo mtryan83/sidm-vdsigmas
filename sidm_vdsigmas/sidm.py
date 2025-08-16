@@ -1,4 +1,4 @@
-
+import numpy as np
 
 class SIDM:
     
@@ -14,9 +14,9 @@ class SIDM:
     def check_consistency(self):
         # should probably use hasattr and getattr
         sd = self.__dict__
-        if 'w' in sd and (not 'mphi' in sd or sd['mphi'] is None):
+        if 'w' in sd and ('mphi' not in sd or sd['mphi'] is None):
             self.mphi = self.w*self.mX
-        elif 'mphi' in sd and (not 'w' in sd or sd['w'] is None):
+        elif 'mphi' in sd and ('w' not in sd or sd['w'] is None):
             self.w = self.mphi/self.mX
         for a in ['mX','mphi','alphaX','w']:
             if not hasattr(self,a) or getattr(self,a) is None:
