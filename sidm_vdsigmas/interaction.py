@@ -333,9 +333,35 @@ class Interaction(object):
         return np.sqrt(a*C/b * K5 * Keff) * sigma0om
     
     def sigma_hat_fun(self,what,*,vn=None,rhon=None,Mn=None,rn=None,C=0.6):
-        '''
-        Eq 8 from Gad-Nasr (dimensionless cross section)
-        '''
+        """Compute the dimensionless effective cross section 
+        
+        Compute the dimensionless effective cross section defined in Eq 8
+        from Gad-Nasr. Two possible methods of rescaling are provided: either
+        using vn and rhon (scale velocity and density) or using Mn and rn
+        (scale mass and radius).
+
+        Inputs:
+            what: float | array
+            Dimensionless velocity, defined as v/self.v0
+
+            vn, rhon: unyt_quantity | unyt_array, optional
+            Scale velocity and density. Must provide either vn/rhon or Mn/rn.
+            If an array is provided, it must be broadcastable against what
+            Common choices are v_max, rho_s from an NFW profile
+
+            Mn, rn: unyt_quantity | unyt_array, optional
+            Scale mass and radii. Must provide either vn/rhon or Mn/rn.
+            If both sets are provided, the vn/rhon pair is ignored.
+            If an array is provided, it must be broadcastable against what
+
+            C: float, optional
+            Calibration parameter. See Gad-Nasr for details. Default is 0.6
+
+        Returns:
+            unyt_quantity | unyt_array
+            The dimensionless effective cross section with the same shape as
+            what
+        """
         part1 = self.dim_sigma_hat(what,C=C)
         if Mn is not None:
             return (part1 * (Mn/(4*np.pi*rn**2))).to('dimensionless').v
