@@ -128,18 +128,50 @@ class Interaction(object):
         return special.roots_genlaguerre(n,alpha,mu)
 
     def Kn(self,x_s,n=5,*,N=20):
-        '''
-        Gauss-Laguerre for averaging over crosssection*v^5
-        p1 = alpha*c/v_s; p2 = alpha*c/w; cross_func takes inputs p1 and p2;
+        r"""Compute the quantity K_n using generalized Gauss-Laguerre quadrature
+
+        See the Notes section for the implementation.
+
+        Inputs:
+            x_s: float | array
+            Scaled, dimensionless velocity, e.g. v/self.v_0
+
+            n: int, optional
+            index, Default is 5
+
+            N: int, optional
+            order of the Laguerre polynomial to use, controls error. Default is 20
+
+        Returns:
+            float | array
+            The quantity K_n evaluated at x_s
+
+        Notes:
+        :math:`K_n` is defined 
+        .. math::
+            K_n(v_{1D}) = \frac{\langle \sigma(v) v_{rel}^n\rangle_{v_{1D}}}{\lim_{w\rightarrow 0}\langle \sigma(v) v_{rel}^n\rangle_{v_{1D}}}
+             
+        We can compute this using Generalized Gauss-Laguerre quadrature using
+        the fact that we have the following relationships:
+        .. math::
+            \langle g(v_{rel}) v_{rel}^n\rangle = C_1 \int_{0}^{\infty} g(v_{rel}) v_{rel}^{(p+1)/2} e^{-v_{rel}^2/(2v_{1D})^2} dv_{rel}
         
-        Quadrature for Integral dx x^3 exp(-x) function(x) = Sum[wgt[i]*function(loc[i]),{i,1,N}]
-        We need Integral dv v^5 v^2 exp(-v^2/(4 v_s^2)) cross(v) / (same integral without cross(v))
-        This can be rewritten as Integral dx x^3 exp(-x) cross(v = 2 v_s sqrt(x)) / 6, 
-        where x = (v/v_s)^2 / 4 
-    
-        This holds true for v^p as long as we change x^3 -> x^alpha, where alpha=(p+1)/2 and 6 -> 
-        sum(wgts)=mu
-        '''
+        and 
+        .. math::
+            \int_{0}^{\infty}f(x) x^{\alpha} e^{-x} dx \approx \sum_{i=1}^{N} w_i f(x_i)
+        
+        where :math:`w_i` and :math:`x_i` are the weights and roots of the
+        generalized Laguerre polynomials :math:`L_N^{(\alpha)}`. Thus if we
+        define :math:`x_i=\left(\frac{v_{rel}}{2 v_{1D}}\right)^2`
+        :math:`\mu=\sum_{i=1}^{N}w_i`, and :math:`\alpha=\frac{p+1}{2}` and assume
+        that :math:`\lim_{w\rightarrow 0} \sigma(v) = \sigma_0` such that we
+        can write :math:`\sigma(v) = \sigma_0 \tilde{\sigma}(v)`, then
+        .. math::
+            K_n(v_{1D}) \approx \frac{1}{\mu}\sum_{i=1}^{N} w_i \tilde{\sigma}(2 v_s \sqrt{x_i})
+        
+        Lastly, we'll define :math:`\hat{\sigma}(x_s)=\tilder{\sigma}(v_s/v_0)`
+        where :math:`v_0` is our cross section velocity scale.
+        """
         alpha = (n+1)/2
         loc,wgt,mu = Interaction._getGLstuff(n=N,alpha=alpha,mu=True) 
         cross = 0
