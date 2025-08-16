@@ -13,6 +13,7 @@ from unyt.dimensions import length,dimensionless
 from .sidm import SIDM
 
 
+sigunit = unyt_quantity(1,'cm**2/g')
 
 class Interaction(object):
     def __init__(self,*,
