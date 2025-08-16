@@ -15,21 +15,13 @@ dependencies = [
   "numpy >= 2",
   "scipy >= 1.4",
   "unyt >= 3",
-  "CLASSICS @ git+https://github.com/kahlhoefer/CLASSICS.git"
 ]
 dynamic = ["version","readme"]
-
-[project.optional-dependencies]
-dev = ["pre-commit"]
-tests = ["dev", "pytest", "pytest-cov"]
 
 [project.urls]
 home = "https://github.com/mtryan83/sidm-vdsigmas"
 source = "https://github.com/mtryan83/sidm-vdsigmas"
 issues = "https://github.com/mtryan83/sidm-vdisgmas/issues/new"
-
-[tool.setuptools]
-packages = ["sidm_vdsigmas"]
 
 [tool.setuptools.dynamic]
 readme = {file = ["README.md"]}
