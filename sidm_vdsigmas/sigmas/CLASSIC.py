@@ -1,4 +1,9 @@
-import numpy as np
+
+from unyt import speed_of_light as c0
+
+import cross_sections as classics
+
+from sidm_vdsigmas.interaction import Interaction
 
 class CLASSIC(Interaction):
     def __init__(self,*args,mode=None,sign=None,**kwargs):
