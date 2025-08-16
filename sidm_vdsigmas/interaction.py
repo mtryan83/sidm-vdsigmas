@@ -293,9 +293,15 @@ class Interaction(object):
         return dndv
 
     def x(self,n):
-        '''
-        Given a value of n, find the corresponding value of x=v/w that provides it
-        '''
+        r"""Given a value of n, find the corresponding value of x=v/w that provides it
+
+        Invert the definition of :math:`n(x) = -\frac{dK_5(x)}{dx}` for a given
+        value of n. Uses a cached scipy.interpolate.CubicSpline of n(log(x))
+
+        Inputs:
+            n: float
+            The value of n to 
+        """
         if not hasattr(self,'xofnspl'):
             self._gen_n_splines()
         return 10**self.xofnspl(n)
