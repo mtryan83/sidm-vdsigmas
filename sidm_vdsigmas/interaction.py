@@ -20,6 +20,19 @@ this class. Please see :doc:`Cross_Sections` and :doc:`Tutorials` for more info
 sigunit = unyt_quantity(1,'cm**2/g')
 
 class Interaction(object):
+    r"""Abstract base class for creating cross sections.
+
+    Specific cross sections can be implemented by inheriting this class. These 
+    child classes must set their name and file_name  before calling this 
+    constructor, and they must implement the :func:`name`, :func:`file_name`,
+    :func:`__call__` and :func:`hat` methods. 
+
+    This class provides a general implementation of the $K_n$-type functions,
+    $n=-\frac{dK_{x}}{dv}$, $\frac{dn}{dv}$, the value of $x$ computed using
+    the implicit equation $n(x) = n_0$, and the dimensionless and dimensionful
+    versions of $\hat{\sigma}$.
+    """
+
     def __init__(self,*,
                  m=None,mphi=None,alphaX=None,
                  sigconst=None,w=None,
