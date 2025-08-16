@@ -173,7 +173,7 @@ class Interaction(object):
         return  (part1 * np.sqrt(rhon/(4*np.pi*G0))*vn).to('dimensionless').v
 
     def __repr__(self):
-        return f'{self.name}(w={self.v0.to("km/s"):4}, σ0/m={self.sigconst.to("cm**2/g"):.5})'
+        return f'{self.name}(w={self.v0.to("km/s"):4.4}, σ0/m={self.sigconst.to("cm**2/g"):.5})'
 
     @abc.abstractmethod
     def __call__(self,v):
