@@ -1,5 +1,7 @@
 import numpy as np
 
+from sidm_vdsigmas.interaction import Interaction
+
 class Moller(Interaction):
     name = 'MøllerV'
     file_name = name
