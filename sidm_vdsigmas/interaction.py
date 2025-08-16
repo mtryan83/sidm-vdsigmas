@@ -265,6 +265,22 @@ class Interaction(object):
         return np.maximum(n,1e-5)
 
     def dndv(self,x_s,*,use_K5=True):
+        r"""Compute n'(x)
+
+        Compute the second derivative of either K_5(x_s) or K_eff(x_s)
+        using a scipy.interpolate.CubicSpline fit. The spline fits are cached.
+
+        Inputs:
+            x_s: float | array
+            Scaled, dimensionless velocity, e.g. v/self.v_0. 
+
+            use_K5: bool, optional
+            If True, K_n is K_5. If False, K_n is K_eff. Default True
+
+        Returns:
+            float | array
+            The quantity n'(x_s)
+        """
         if not hasattr(self,'dn5dv'):
             # generate spline derivative of n
             if not hasattr(self,'dlogk5dlox'):
