@@ -39,6 +39,41 @@ class Interaction(object):
                  sidm=None,
                  disable_warning=False,
                 ):
+        r"""Create an interaction cross section
+        
+        Creates an interaction cross section object from the specified
+        SIDM model parameters. Model parameters can be specified in one 
+        of 3 ways (ordered by priority): as an instance of the SIDM class;
+        via the m, mphi, and w parameters; or via the sigconst and w 
+        parameters. Any of the 3 ways will populate the other the parameters
+        of the other two. 
+
+        Inputs:
+            m, mphi: unyt_quantity, optional
+            Mass of the SIDM (m) or SIDM mediator (mphi) as a 
+            dimensionful quantity
+            alphaX: float
+            SIDM fine structure constant. Defaults to 1
+
+            sigconst: float | unyt_quantity, optional
+            Constant velocity portion of the cross section, commonly denoted
+            as $\sigma_0$ or $\sigma_0/m$. Units can be *either* $length^2$
+            or as $length^2/mass$. If provided as a float, will assume $cm^2/g$
+            w: float | unyt_quantity
+            Scale velocity/mediator-mass ratio of the cross section. If units
+            are provided and not dimensionless, assumed to be scale velocity, 
+            aka **`v0`**. If no units or dimensionless, assumed to be 
+            mphi/m ratio and `v0` is defined as $v_0 = w c$ in km/s. If neither 
+            sigconst nor w have have units, **both are assumed to have units**
+
+            sidm: SIDM, optional
+            SIDM parameter class instance.  Effectively the same as providing
+            m, mphi, alphaX, and w 
+
+            disable_warning: bool, optional
+            Flag to turn off the warning about neither sigconst nor w having
+            units. Default False
+        """
         self.sidm = None
         if sidm is not None:
             m = sidm.mX
