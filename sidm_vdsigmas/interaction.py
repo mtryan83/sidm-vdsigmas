@@ -31,6 +31,7 @@ class Interaction(object):
             self.sidm = sidm
         self.m=m
         self.mphi=mphi
+        alphaX = alphaX if alphaX is not None else 1
         self.alphaX=alphaX
         if sigconst is not None and not isinstance(sigconst,(unyt_array,unyt_quantity)):
             # if sigconst and w are supplied, but *neither* have units
