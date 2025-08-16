@@ -12,6 +12,10 @@ from unyt.dimensions import length,dimensionless
 
 from .sidm import SIDM
 
+"""
+Intention is to have the majority of all cross section functions implemented in
+this class. Please see :doc:`Cross_Sections` and :doc:`Tutorials` for more info
+"""
 
 sigunit = unyt_quantity(1,'cm**2/g')
 
