@@ -18,8 +18,8 @@ sigunit = unyt_quantity(1,'cm**2/g')
 class Interaction(object):
     def __init__(self,*,
                  m=None,mphi=None,alphaX=None,
-                 w=None,sigconst=None,
-                 sidm=None
+                 sigconst=None,w=None,
+                 sidm=None,
                 ):
         self.sidm = None
         if sidm is not None:
