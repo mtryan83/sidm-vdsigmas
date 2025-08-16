@@ -196,6 +196,22 @@ class Interaction(object):
         return self.Kn(0.8233*x_s,n=5)
 
     def Keff(self,x_s):
+        r"""Compute the second order K_eff term
+
+        Inputs:
+            x_s: float | array
+            Scaled, dimensionless velocity, e.g. v/self.v_0
+
+        Returns:
+            float | array
+            The second order K_eff term evaluated at x_s
+
+        Notes:
+        The second order K_eff term is defined as 
+        .. math::
+            K_{eff}^{(2)} = \frac{28 K_5^2 + 80*K_5*K_9 - 64*K7^2}{77*K5 - 112*K7 + 80*K9}
+        
+        """
         x_s = x_s*0.8233
         K5 = self.Kn(x_s)
         K7 = self.Kn(x_s,n=7)
