@@ -108,7 +108,7 @@ class CLASSIC(Interaction):
         beta = 2*self.alphaX/self.w / x**2
         return self.iden*classics.sigma_combined(kappa, beta, mode=self.mode, sign=self.sign)
 
-    def sigma_nd(self,v):
+    def _sigma_nd(self,v):
         """Compute dimensionless sigma directly from velocity instead of scaled velocity
 
         This should produce equivalent results to calling self.hat(v/self.v0),
