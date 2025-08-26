@@ -3,21 +3,23 @@ import numpy as np
 from sidm_vdsigmas.interaction import Interaction
 
 """
-This module implements Rutherford cross sections. Currently only the
-viscosity cross section is supported.
+This module implements the approximate cross section currently (2025, c70c760)
+currently provided in the GIZMO multi-physics code.
 """
 
-class Rutherford(Interaction):
-    """Rutherford viscosity cross section
+class Gizmo(Interaction):
+	"""Gizmo cross section
 
-    The cross section is computed from the analytic dimensionless cross section
-    defined in Yang 2023 (arXiv:2305.05067)
-        
-    """
-    name = 'RutherfordV'
+	The cross section is based on the self-interaction kernel defined in the 
+    sidm/sidm_core.c file as of commit c70c760. This is a rough approximation
+    of a Moller/Rutherford-type viscosity cross section.
+		
+	"""
+	
+    name = 'Gizmo'
     file_name = name
     def __call__(self,v):
-        """Compute the value of the cross section at the specified velocity
+    	"""Compute the value of the cross section at the specified velocity
 
         Note that this is just a scaled version of hat(x).
 
@@ -37,7 +39,7 @@ class Rutherford(Interaction):
         return sigma0 * self.hat(v/w)
 
     def hat(self,x):
-        r"""Compute the value of the dimensionless component of the cross section at the specified dimensionless velocity
+	    r"""Compute the value of the dimensionless component of the cross section at the specified dimensionless velocity
 
         Inputs:
             x: float | unyt_like(dimensionless)
@@ -48,4 +50,4 @@ class Rutherford(Interaction):
             Value of the cross section at the specified velocity. Will have same shape as v
         """
         x = np.maximum(x,1/50)
-        return 6*x**-6*(-2*x**2 + (2+x**2)*np.log(1+x**2))
+        return 1./(1. + x**4.)
