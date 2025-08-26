@@ -14,7 +14,7 @@ from .sidm import SIDM
 
 """
 Intention is to have the majority of all cross section functions implemented in
-this class. Please see :doc:`Cross_Sections` and :doc:`Tutorials` for more info
+this module. Please see :doc:`Cross_Sections` and :doc:`Tutorials` for more info
 """
 
 sigunit = unyt_quantity(1,'cm**2/g')
@@ -31,6 +31,38 @@ class Interaction(object):
     $n=-\frac{dK_{x}}{dv}$, $\frac{dn}{dv}$, the value of $x$ computed using
     the implicit equation $n(x) = n_0$, and the dimensionless and dimensionful
     versions of $\hat{\sigma}$.
+    
+	Model parameters can be specified in one 
+    of 3 ways (ordered by priority): as an instance of the SIDM class;
+    via the m, mphi, and w parameters; or via the sigconst and w 
+    parameters. Any of the 3 ways will populate the other the parameters
+    of the other two. 
+
+    Inputs:
+        m, mphi: unyt_quantity, optional
+        Mass of the SIDM (m) or SIDM mediator (mphi) as a 
+        dimensionful quantity
+        alphaX: float
+        SIDM fine structure constant. Defaults to 1
+
+        sigconst: float | unyt_quantity, optional
+        Constant velocity portion of the cross section, commonly denoted
+        as $\sigma_0$ or $\sigma_0/m$. Units can be *either* $length^2$
+        or as $length^2/mass$. If provided as a float, will assume $cm^2/g$
+        w: float | unyt_quantity
+        Scale velocity/mediator-mass ratio of the cross section. If units
+        are provided and not dimensionless, assumed to be scale velocity, 
+        aka **`v0`**. If no units or dimensionless, assumed to be 
+        mphi/m ratio and `v0` is defined as $v_0 = w c$ in km/s. If neither 
+        sigconst nor w have have units, **both are assumed to have units**
+
+        sidm: SIDM, optional
+        SIDM parameter class instance.  Effectively the same as providing
+        m, mphi, alphaX, and w 
+
+        disable_warning: bool, optional
+        Flag to turn off the warning about neither sigconst nor w having
+        units. Default False
     """
 
     def __init__(self,*,
@@ -39,41 +71,6 @@ class Interaction(object):
                  sidm=None,
                  disable_warning=False,
                 ):
-        r"""Create an interaction cross section
-        
-        Creates an interaction cross section object from the specified
-        SIDM model parameters. Model parameters can be specified in one 
-        of 3 ways (ordered by priority): as an instance of the SIDM class;
-        via the m, mphi, and w parameters; or via the sigconst and w 
-        parameters. Any of the 3 ways will populate the other the parameters
-        of the other two. 
-
-        Inputs:
-            m, mphi: unyt_quantity, optional
-            Mass of the SIDM (m) or SIDM mediator (mphi) as a 
-            dimensionful quantity
-            alphaX: float
-            SIDM fine structure constant. Defaults to 1
-
-            sigconst: float | unyt_quantity, optional
-            Constant velocity portion of the cross section, commonly denoted
-            as $\sigma_0$ or $\sigma_0/m$. Units can be *either* $length^2$
-            or as $length^2/mass$. If provided as a float, will assume $cm^2/g$
-            w: float | unyt_quantity
-            Scale velocity/mediator-mass ratio of the cross section. If units
-            are provided and not dimensionless, assumed to be scale velocity, 
-            aka **`v0`**. If no units or dimensionless, assumed to be 
-            mphi/m ratio and `v0` is defined as $v_0 = w c$ in km/s. If neither 
-            sigconst nor w have have units, **both are assumed to have units**
-
-            sidm: SIDM, optional
-            SIDM parameter class instance.  Effectively the same as providing
-            m, mphi, alphaX, and w 
-
-            disable_warning: bool, optional
-            Flag to turn off the warning about neither sigconst nor w having
-            units. Default False
-        """
         self.sidm = None
         if sidm is not None:
             m = sidm.mX
@@ -321,7 +318,7 @@ class Interaction(object):
             Calibration parameter. See Gad-Nasr for details. Default is 0.6
             
         Returns:
-            unyt_quantity | unyt_array
+            unyt_like
             The dimensionfull effective cross section with the same shape as
             what
         """
@@ -344,12 +341,12 @@ class Interaction(object):
             what: float | array
             Dimensionless velocity, defined as v/self.v0
 
-            vn, rhon: unyt_quantity | unyt_array, optional
+            vn, rhon: unyt_like, optional
             Scale velocity and density. Must provide either vn/rhon or Mn/rn.
             If an array is provided, it must be broadcastable against what
             Common choices are v_max, rho_s from an NFW profile
 
-            Mn, rn: unyt_quantity | unyt_array, optional
+            Mn, rn: unyt_like, optional
             Scale mass and radii. Must provide either vn/rhon or Mn/rn.
             If both sets are provided, the vn/rhon pair is ignored.
             If an array is provided, it must be broadcastable against what
@@ -358,7 +355,7 @@ class Interaction(object):
             Calibration parameter. See Gad-Nasr for details. Default is 0.6
 
         Returns:
-            unyt_quantity | unyt_array
+            unyt_like
             The dimensionless effective cross section with the same shape as
             what
         """
@@ -387,11 +384,11 @@ class Interaction(object):
                 return 1/(1+x**2)
 
         Inputs:
-            v: unyt_quantity | unyt_array
+            v: unyt_like
             Velocity to calculate at
 
         Returns:
-            unyt_quantity | unyt_array
+            unyt_like
             Value of the cross section at the specified velocity. Will have same shape as v
 
         Raises:
@@ -421,11 +418,11 @@ class Interaction(object):
                 return self(self.v0 * x)/self.sigconst
 
         Inputs:
-            v: unyt_quantity | unyt_array
+            v: unyt_like(dimensionless)
             Velocity to calculate at
 
         Returns:
-            unyt_quantity | unyt_array
+            unyt_like(dimensionless)
             Value of the cross section at the specified velocity. Will have same shape as v
 
         Raises:
