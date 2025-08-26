@@ -1,6 +1,36 @@
 import numpy as np
 
+"""
+Module for the SIDM class and related functionality
+"""
+
 class SIDM:
+    """Class to store SIDM parameters
+    
+    This class maintains a self-consistent set of SIDM parameters, including
+    SIDM particle mass (mX), SIDM mediator mass (mphi), SIDM fine structure
+    constant (alphaX), and mass ratio (w=mX/mphi). Note that only one of
+    (mphi,w) needs to be specified. The other will be auto-calculated.
+    
+    Inputs:
+        mX: unyt_quantity
+        Mass of the SIDM particle
+        
+        mphi: unyt_quantity, optional
+        Mass of the SIDM mediator. If not provided, will by computed based
+        on mX and w. 
+        
+        w: float | unyt_quantity, optional
+        Mass ratio of mphi to mX. If not provided will be computed based on
+        mX and w.
+        
+        alphaX: float | unyt_quantity
+        SIDM fine structure constant
+        
+    Raises:
+        ValueError if one or more of mX, alphaX, or (mphi/w) are missing or
+        are inconsistent.
+    """
     
     def __init__(self,**kwargs):
         self.mX = None
@@ -12,6 +42,8 @@ class SIDM:
         self.check_consistency()
 
     def check_consistency(self):
+        """ Check that all parameters are present and that w and mphi are consistent
+        """
         # should probably use hasattr and getattr
         sd = self.__dict__
         if 'w' in sd and ('mphi' not in sd or sd['mphi'] is None):
