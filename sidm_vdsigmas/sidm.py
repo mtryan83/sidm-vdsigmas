@@ -50,6 +50,9 @@ class SIDM:
             self.mphi = self.w*self.mX
         elif 'mphi' in sd and ('w' not in sd or sd['w'] is None):
             self.w = self.mphi/self.mX
+        elif 'mphi' in sd and 'w' in sd:
+            if not np.isclose(self.w,self.mphi/self.mX):
+                raise ValueError(f'w and mphi are inconsistent: {w=:.4} mphi/mX={mphi/mX:.4}')
         for a in ['mX','mphi','alphaX','w']:
             if not hasattr(self,a) or getattr(self,a) is None:
                 raise ValueError(f'Attribute {a} not provided!')
