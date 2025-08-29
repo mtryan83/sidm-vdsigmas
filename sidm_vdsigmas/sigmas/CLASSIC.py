@@ -52,7 +52,7 @@ class CLASSIC(Interaction):
         self.iden = 1/2 if mode in ('T','V') else 1 # 1/2 for identical particles
         # CLASSICs cross-sections have an additional non-dimensional geometric factor that needs to be
         # included when figuring out sigconst
-        sig0 = self.sigma_nd(self.v0 / 50)
+        sig0 = self._sigma_nd(self.v0 / 50)
         self.sigscale = self.sigconst / sig0
 
     @property
