@@ -6,9 +6,14 @@ from functools import cache
 import scipy.special as special
 import scipy.interpolate as interpolate
 
-from unyt import (unyt_array, unyt_quantity, speed_of_light as c0, 
-                    reduced_planck_constant as hbar, gravitational_constant as G0)
-from unyt.dimensions import length,dimensionless
+from unyt import (
+    unyt_array,
+    unyt_quantity,
+    speed_of_light as c0,
+    reduced_planck_constant as hbar,
+    gravitational_constant as G0,
+)
+from unyt.dimensions import length, dimensionless
 
 from .sidm import SIDM
 
@@ -17,30 +22,31 @@ Intention is to have the majority of all cross section functions implemented in
 this module. Please see :doc:`Cross_Sections` and :doc:`Tutorials` for more info
 """
 
-sigunit = unyt_quantity(1,'cm**2/g')
+sigunit = unyt_quantity(1, "cm**2/g")
+
 
 class Interaction(object):
     r"""Abstract base class for creating cross sections.
 
-    Specific cross sections can be implemented by inheriting this class. These 
-    child classes must set their name and file_name  before calling this 
+    Specific cross sections can be implemented by inheriting this class. These
+    child classes must set their name and file_name  before calling this
     constructor, and they must implement the :func:`name`, :func:`file_name`,
-    :func:`__call__` and :func:`hat` methods. 
+    :func:`__call__` and :func:`hat` methods.
 
     This class provides a general implementation of the $K_n$-type functions,
     $n=-\frac{dK_{x}}{dv}$, $\frac{dn}{dv}$, the value of $x$ computed using
     the implicit equation $n(x) = n_0$, and the dimensionless and dimensionful
     versions of $\hat{\sigma}$.
-    
-	Model parameters can be specified in one 
+
+        Model parameters can be specified in one
     of 3 ways (ordered by priority): as an instance of the SIDM class;
-    via the m, mphi, and w parameters; or via the sigconst and w 
+    via the m, mphi, and w parameters; or via the sigconst and w
     parameters. Any of the 3 ways will populate the other the parameters
-    of the other two. 
+    of the other two.
 
     Inputs:
         m, mphi: unyt_quantity, optional
-        Mass of the SIDM (m) or SIDM mediator (mphi) as a 
+        Mass of the SIDM (m) or SIDM mediator (mphi) as a
         dimensionful quantity
         alphaX: float
         SIDM fine structure constant. Defaults to 1
@@ -51,26 +57,31 @@ class Interaction(object):
         or as $length^2/mass$. If provided as a float, will assume $cm^2/g$
         w: float | unyt_quantity
         Scale velocity/mediator-mass ratio of the cross section. If units
-        are provided and not dimensionless, assumed to be scale velocity, 
-        aka **`v0`**. If no units or dimensionless, assumed to be 
-        mphi/m ratio and `v0` is defined as $v_0 = w c$ in km/s. If neither 
+        are provided and not dimensionless, assumed to be scale velocity,
+        aka **`v0`**. If no units or dimensionless, assumed to be
+        mphi/m ratio and `v0` is defined as $v_0 = w c$ in km/s. If neither
         sigconst nor w have have units, **both are assumed to have units**
 
         sidm: SIDM, optional
         SIDM parameter class instance.  Effectively the same as providing
-        m, mphi, alphaX, and w 
+        m, mphi, alphaX, and w
 
         disable_warning: bool, optional
         Flag to turn off the warning about neither sigconst nor w having
         units. Default False
     """
 
-    def __init__(self,*,
-                 m=None,mphi=None,alphaX=None,
-                 sigconst=None,w=None,
-                 sidm=None,
-                 disable_warning=False,
-                ):
+    def __init__(
+        self,
+        *,
+        m=None,
+        mphi=None,
+        alphaX=None,
+        sigconst=None,
+        w=None,
+        sidm=None,
+        disable_warning=False,
+    ):
         self.sidm = None
         if sidm is not None:
             m = sidm.mX
@@ -78,53 +89,61 @@ class Interaction(object):
             alphaX = sidm.alphaX
             w = sidm.w
             self.sidm = sidm
-        self.m=m
-        self.mphi=mphi
+        self.m = m
+        self.mphi = mphi
         alphaX = alphaX if alphaX is not None else 1
-        self.alphaX=alphaX
-        if sigconst is not None and not isinstance(sigconst,(unyt_array,unyt_quantity)):
+        self.alphaX = alphaX
+        if sigconst is not None and not isinstance(
+            sigconst, (unyt_array, unyt_quantity)
+        ):
             # if sigconst and w are supplied, but *neither* have units
             # assume *both* should have units
-            if w is not None and not isinstance(w,(unyt_array,unyt_quantity)):
-                w = unyt_quantity(w,'km/s')
+            if w is not None and not isinstance(w, (unyt_array, unyt_quantity)):
+                w = unyt_quantity(w, "km/s")
                 if not disable_warning:
-                    print('Neither sigconst nor w had units. Assuming both should.')
+                    print("Neither sigconst nor w had units. Assuming both should.")
             sigconst = sigconst * sigunit
         if m is not None and mphi is not None and alphaX is not None:
-            w = mphi/m
-            sigconst = (hbar/c0)**2 * np.pi * alphaX**2/(w**2 * m**3)
-        if isinstance(w,(unyt_array,unyt_quantity)) and w.units != dimensionless:
+            w = mphi / m
+            sigconst = (hbar / c0) ** 2 * np.pi * alphaX**2 / (w**2 * m**3)
+        if isinstance(w, (unyt_array, unyt_quantity)) and w.units != dimensionless:
             self.v0 = w
-            w = w/c0
+            w = w / c0
         else:
-            self.v0 = w*c0
+            self.v0 = w * c0
         if m is None:
-            self.m = (((hbar/c0)**2 * np.pi*alphaX**2/(w**2*sigconst))**(1/3)).to('GeV/c**2')
+            self.m = (
+                ((hbar / c0) ** 2 * np.pi * alphaX**2 / (w**2 * sigconst)) ** (1 / 3)
+            ).to("GeV/c**2")
         if mphi is None:
             self.mphi = w * self.m
         self.w = w
         if self.sidm is None:
-            self.sidm = SIDM(mX=self.m,mphi=self.mphi,alphaX=self.alphaX,w=self.w)
-        sigconst = sigconst.to('cm**2') if sigconst.units.dimensions/length**2==1 else sigconst.to('cm**2/g')
+            self.sidm = SIDM(mX=self.m, mphi=self.mphi, alphaX=self.alphaX, w=self.w)
+        sigconst = (
+            sigconst.to("cm**2")
+            if sigconst.units.dimensions / length**2 == 1
+            else sigconst.to("cm**2/g")
+        )
         self.sigconst = sigconst
 
     @property
-    @abc.abstractproperty
+    @abc.abstractmethod
     def name(self):
-        raise NotImplementedError('Defined by implemented class!')
+        raise NotImplementedError("Defined by implemented class!")
 
     @property
-    @abc.abstractproperty
+    @abc.abstractmethod
     def file_name(self):
-        raise NotImplementedError('Defined by implemented class!')
+        raise NotImplementedError("Defined by implemented class!")
 
     @classmethod
     @cache
-    def _getGLstuff(cls,n=20,alpha=3,mu=True):
+    def _getGLstuff(cls, n=20, alpha=3, mu=True):
         """Return (cached) roots from scipy.special General Gauss-Laguerre function"""
-        return special.roots_genlaguerre(n,alpha,mu)
+        return special.roots_genlaguerre(n, alpha, mu)
 
-    def Kn(self,x_s,n=5,*,N=20):
+    def Kn(self, x_s, n=5, *, N=20):
         r"""Compute the quantity K_n using generalized Gauss-Laguerre quadrature
 
         See the Notes section for the implementation.
@@ -144,19 +163,19 @@ class Interaction(object):
             The quantity K_n evaluated at x_s
 
         Notes:
-        :math:`K_n` is defined 
+        :math:`K_n` is defined
         .. math::
             K_n(v_{1D}) = \frac{\langle \sigma(v) v_{rel}^n\rangle_{v_{1D}}}{\lim_{w\rightarrow 0}\langle \sigma(v) v_{rel}^n\rangle_{v_{1D}}}
-             
+
         We can compute this using Generalized Gauss-Laguerre quadrature using
         the fact that we have the following relationships:
         .. math::
             \langle g(v_{rel}) v_{rel}^n\rangle = C_1 \int_{0}^{\infty} g(v_{rel}) v_{rel}^{(p+1)/2} e^{-v_{rel}^2/(2v_{1D})^2} dv_{rel}
-        
-        and 
+
+        and
         .. math::
             \int_{0}^{\infty}f(x) x^{\alpha} e^{-x} dx \approx \sum_{i=1}^{N} w_i f(x_i)
-        
+
         where :math:`w_i` and :math:`x_i` are the weights and roots of the
         generalized Laguerre polynomials :math:`L_N^{(\alpha)}`. Thus if we
         define :math:`x_i=\left(\frac{v_{rel}}{2 v_{1D}}\right)^2`
@@ -165,18 +184,20 @@ class Interaction(object):
         can write :math:`\sigma(v) = \sigma_0 \tilde{\sigma}(v)`, then
         .. math::
             K_n(v_{1D}) \approx \frac{1}{\mu}\sum_{i=1}^{N} w_i \tilde{\sigma}(2 v_s \sqrt{x_i})
-        
+
         Lastly, we'll define :math:`\hat{\sigma}(x_s)=\tilder{\sigma}(v_s/v_0)`
         where :math:`v_0` is our cross section velocity scale.
         """
-        alpha = (n+1)/2
-        loc,wgt,mu = Interaction._getGLstuff(n=N,alpha=alpha,mu=True) 
+        alpha = (n + 1) / 2
+        loc, wgt, mu = Interaction._getGLstuff(n=N, alpha=alpha, mu=True)
         cross = 0
-        for x,w in zip(loc,wgt): # 2*sqrt(x) = v/v1d; p1v = alpha*c/v = p1*v1d/v = p1/(2*np.sqrt(x))
-            cross += w*self.hat(2*x_s*np.sqrt(x))
-        return cross/mu
+        for x, w in zip(
+            loc, wgt
+        ):  # 2*sqrt(x) = v/v1d; p1v = alpha*c/v = p1*v1d/v = p1/(2*np.sqrt(x))
+            cross += w * self.hat(2 * x_s * np.sqrt(x))
+        return cross / mu
 
-    def K5(self,x_s):
+    def K5(self, x_s):
         """Compute the quantity K_5
 
         Shortcut version of :code:`K_n(x_s,n=5)`
@@ -190,9 +211,9 @@ class Interaction(object):
             The quantity K_5 evaluated at x_s
         """
         # For some reason these appear to be off. Multiplying v_s by 0.8233 helps
-        return self.Kn(0.8233*x_s,n=5)
+        return self.Kn(0.8233 * x_s, n=5)
 
-    def Keff(self,x_s):
+    def Keff(self, x_s):
         r"""Compute the second order K_eff term
 
         Inputs:
@@ -204,31 +225,35 @@ class Interaction(object):
             The second order K_eff term evaluated at x_s
 
         Notes:
-        The second order K_eff term is defined as 
+        The second order K_eff term is defined as
         .. math::
             K_{eff}^{(2)} = \frac{28 K_5^2 + 80*K_5*K_9 - 64*K7^2}{77*K5 - 112*K7 + 80*K9}
-        
-        """
-        x_s = x_s*0.8233
-        K5 = self.Kn(x_s)
-        K7 = self.Kn(x_s,n=7)
-        K9 = self.Kn(x_s,n=9)
-        return (28*K5**2 + 80*K5*K9 - 64*K7**2)/(77*K5 - 112*K7 + 80*K9)
 
-    def _gen_n_splines(self,):
+        """
+        x_s = x_s * 0.8233
+        K5 = self.Kn(x_s)
+        K7 = self.Kn(x_s, n=7)
+        K9 = self.Kn(x_s, n=9)
+        return (28 * K5**2 + 80 * K5 * K9 - 64 * K7**2) / (77 * K5 - 112 * K7 + 80 * K9)
+
+    def _gen_n_splines(
+        self,
+    ):
         """Generate and cache interpolating splines"""
-        x = np.logspace(-3,3)
+        x = np.logspace(-3, 3)
         logK5 = np.log10(self.K5(x))
         logKeff = np.log10(self.Keff(x))
         logx = np.log10(x)
-        K5spl = interpolate.CubicSpline(logx,logK5)
-        Keffspl = interpolate.CubicSpline(logx,logKeff)
+        K5spl = interpolate.CubicSpline(logx, logK5)
+        Keffspl = interpolate.CubicSpline(logx, logKeff)
         self.dlogK5dlogx = K5spl.derivative()
         self.dlogKeffdlogx = Keffspl.derivative()
-        ns,nuinds = np.unique(np.maximum(-self.dlogK5dlogx(logx),1e-5),return_index=True)
-        self.xofnspl = interpolate.CubicSpline(ns,logx[nuinds])
-    
-    def n(self,x_s=None,*,use_K5=True,v_s=None):
+        ns, nuinds = np.unique(
+            np.maximum(-self.dlogK5dlogx(logx), 1e-5), return_index=True
+        )
+        self.xofnspl = interpolate.CubicSpline(ns, logx[nuinds])
+
+    def n(self, x_s=None, *, use_K5=True, v_s=None):
         r"""Compute the negative log derivative of K_n(v) or K_n(x)
 
         Compute the negative log derivative of either K_5(x_s) or K_eff(x_s)
@@ -251,17 +276,17 @@ class Interaction(object):
             The negative log derivative of K_n evaluated at x_s
         """
         if v_s is not None:
-            x_s = v_s/self.v0
+            x_s = v_s / self.v0
         if x_s is None:
-            raise TypeError('Either x_s (preferred) or v_s must be provided')
-        if not hasattr(self,'dlogK5dlogx'):
+            raise TypeError("Either x_s (preferred) or v_s must be provided")
+        if not hasattr(self, "dlogK5dlogx"):
             self._gen_n_splines()
         # need n = -dlogK/dlogx
         logxs = np.log10(x_s)
         n = -self.dlogK5dlogx(logxs) if use_K5 else -self.dlogKeffdlogx(logxs)
-        return np.maximum(n,1e-5)
+        return np.maximum(n, 1e-5)
 
-    def dndv(self,x_s,*,use_K5=True):
+    def dndv(self, x_s, *, use_K5=True):
         r"""Compute n'(x)
 
         Compute the second derivative of either K_5(x_s) or K_eff(x_s)
@@ -269,7 +294,7 @@ class Interaction(object):
 
         Inputs:
             x_s: float | array
-            Scaled, dimensionless velocity, e.g. v/self.v_0. 
+            Scaled, dimensionless velocity, e.g. v/self.v_0.
 
             use_K5: bool, optional
             If True, K_n is K_5. If False, K_n is K_eff. Default True
@@ -278,9 +303,9 @@ class Interaction(object):
             float | array
             The quantity n'(x_s)
         """
-        if not hasattr(self,'dn5dv'):
+        if not hasattr(self, "dn5dv"):
             # generate spline derivative of n
-            if not hasattr(self,'dlogk5dlox'):
+            if not hasattr(self, "dlogk5dlox"):
                 # need to generate n splines
                 self.n(x_s)
             self.dn5dv = self.dlogK5dlogx.derivative()
@@ -289,7 +314,7 @@ class Interaction(object):
         dndv = self.dn5dv(logxs) if use_K5 else self.dneffdv(logxs)
         return dndv
 
-    def x(self,n):
+    def x(self, n):
         r"""Given a value of n, find the corresponding value of x=v/w that provides it
 
         Invert the definition of :math:`n(x) = -\frac{dK_5(x)}{dx}` for a given
@@ -297,16 +322,16 @@ class Interaction(object):
 
         Inputs:
             n: float
-            The value of n to 
+            The value of n to
         """
-        if not hasattr(self,'xofnspl'):
+        if not hasattr(self, "xofnspl"):
             self._gen_n_splines()
-        return 10**self.xofnspl(n)
+        return 10 ** self.xofnspl(n)
 
-    def dim_sigma_hat(self,what,*,C=0.6):
-        """Compute the dimensionful effective cross section 
-        
-        Compute Eq 8 from Gad-Nasr (dimensionful cross section) but without 
+    def dim_sigma_hat(self, what, *, C=0.6):
+        """Compute the dimensionful effective cross section
+
+        Compute Eq 8 from Gad-Nasr (dimensionful cross section) but without
         the M/4*pi*r**2 scaling. This is the effective cross section in normal
         length^2/mass units.
 
@@ -316,7 +341,7 @@ class Interaction(object):
 
             C: float, optional
             Calibration parameter. See Gad-Nasr for details. Default is 0.6
-            
+
         Returns:
             unyt_like
             The dimensionfull effective cross section with the same shape as
@@ -325,13 +350,13 @@ class Interaction(object):
         K5 = self.K5(what)
         Keff = self.Keff(what)
         sigma0om = self.sigconst
-        a = 4/np.sqrt(np.pi)
-        b = 25/32*np.sqrt(np.pi)
-        return np.sqrt(a*C/b * K5 * Keff) * sigma0om
-    
-    def sigma_hat_fun(self,what,*,vn=None,rhon=None,Mn=None,rn=None,C=0.6):
-        """Compute the dimensionless effective cross section 
-        
+        a = 4 / np.sqrt(np.pi)
+        b = 25 / 32 * np.sqrt(np.pi)
+        return np.sqrt(a * C / b * K5 * Keff) * sigma0om
+
+    def sigma_hat_fun(self, what, *, vn=None, rhon=None, Mn=None, rn=None, C=0.6):
+        """Compute the dimensionless effective cross section
+
         Compute the dimensionless effective cross section defined in Eq 8
         from Gad-Nasr. Two possible methods of rescaling are provided: either
         using vn and rhon (scale velocity and density) or using Mn and rn
@@ -359,20 +384,20 @@ class Interaction(object):
             The dimensionless effective cross section with the same shape as
             what
         """
-        part1 = self.dim_sigma_hat(what,C=C)
+        part1 = self.dim_sigma_hat(what, C=C)
         if Mn is not None:
-            return (part1 * (Mn/(4*np.pi*rn**2))).to('dimensionless').v
-        return  (part1 * np.sqrt(rhon/(4*np.pi*G0))*vn).to('dimensionless').v
+            return (part1 * (Mn / (4 * np.pi * rn**2))).to("dimensionless").v
+        return (part1 * np.sqrt(rhon / (4 * np.pi * G0)) * vn).to("dimensionless").v
 
     def __repr__(self):
-        """String representation of the Interaction """
-        return f'{self.name}(w={self.v0.to("km/s"):4.4}, σ0/m={self.sigconst.to("cm**2/g"):.5})'
+        """String representation of the Interaction"""
+        return f"{self.name}(w={self.v0.to('km/s'):4.4}, σ0/m={self.sigconst.to('cm**2/g'):.5})"
 
     @abc.abstractmethod
-    def __call__(self,v):
+    def __call__(self, v):
         """Compute the value of the cross section at the specified velocity
 
-        Abstract function which must be overwritten by child classes. 
+        Abstract function which must be overwritten by child classes.
         Note that it is expected either this method or :doc:`hat` will be a
         wrapper of the other in most cases. For example:
         .. code::
@@ -394,18 +419,18 @@ class Interaction(object):
         Raises:
             NotImplementedError if not called on a subclass
         """
-        raise NotImplementedError('Needs to be defined in subclass')
+        raise NotImplementedError("Needs to be defined in subclass")
 
     @abc.abstractmethod
-    def hat(self,x):
+    def hat(self, x):
         r"""Compute the value of the dimensionless component of the cross section at the specified dimensionless velocity
 
-        If the cross section can be defined as 
+        If the cross section can be defined as
         :math:`\sigma(v) = \sigma_0 \hat{\sigma}(v/v_0)` where :math:`\sigma_0`
-        contains all the dimensionful information and :math:`v_0` is the 
-        velocity scale such that :math:`x=\frac{v}{v_0}`, this function 
+        contains all the dimensionful information and :math:`v_0` is the
+        velocity scale such that :math:`x=\frac{v}{v_0}`, this function
         computes :math:`\hat{\sigma}(x)`.
-        
+
         Abstract function which must be overwritten by child classes.
         Note that it is expected either this method or :doc:`__call__` will be a
         wrapper of the other in most cases. For example:
@@ -428,5 +453,4 @@ class Interaction(object):
         Raises:
             NotImplementedError if not called on a subclass
         """
-        raise NotImplementedError('Needs to be defined in subclass')
-
+        raise NotImplementedError("Needs to be defined in subclass")
