@@ -82,6 +82,9 @@ class Interaction(object):
         sidm=None,
         disable_warning=False,
     ):
+        if len({m, mphi, alphaX, sigconst, w, sidm}) == 1:
+            # If all parameters are None, this will be just {None}
+            raise ValueError("Must provide at least one set of parameters :)")
         self.sidm = None
         if sidm is not None:
             m = sidm.mX
