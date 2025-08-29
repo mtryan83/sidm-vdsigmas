@@ -23,6 +23,9 @@ home = "https://github.com/mtryan83/sidm-vdsigmas"
 source = "https://github.com/mtryan83/sidm-vdsigmas"
 issues = "https://github.com/mtryan83/sidm-vdisgmas/issues/new"
 
+[tool.setuptools]
+packages = ["sidm_vdsigmas", "CLASSICS",]
+
 [tool.setuptools.dynamic]
 readme = {file = ["README.md"]}
 
