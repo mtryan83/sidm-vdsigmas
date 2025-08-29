@@ -30,3 +30,19 @@ readme = {file = ["README.md"]}
 version_scheme = "guess-next-dev"
 local_scheme = "dirty-tag"
 write_to = "sidm_vdsigmas/_version.py"
+
+[tool.ruff]
+exclude = [
+    "CLASSICS",
+    ".git",
+    ".git-rewrite",
+    ".ipynb_checkpoints",
+    ".ruff_cache",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "_build",
+    "build",
+    "dist",
+    "venv",
+]

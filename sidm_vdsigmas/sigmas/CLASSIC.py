@@ -1,7 +1,6 @@
-
 from unyt import speed_of_light as c0
 
-import cross_sections as classics
+import CLASSICS.cross_sections as classics
 
 from sidm_vdsigmas.interaction import Interaction
 
