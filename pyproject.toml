@@ -25,6 +25,9 @@ issues = "https://github.com/mtryan83/sidm-vdisgmas/issues/new"
 
 [project.optional-dependencies]
 tests = ["pytest", "pytest-cov"]
+docs = [
+  "mkdocs-material"
+]
 
 [tool.pytest.ini_options]
 addopts = "--doctest-modules"
