@@ -26,6 +26,7 @@ issues = "https://github.com/mtryan83/sidm-vdisgmas/issues/new"
 [project.optional-dependencies]
 tests = ["pytest", "pytest-cov"]
 docs = [
+  "mkdocs",
   "mkdocs-material"
 ]
 
