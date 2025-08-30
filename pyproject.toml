@@ -23,6 +23,18 @@ home = "https://github.com/mtryan83/sidm-vdsigmas"
 source = "https://github.com/mtryan83/sidm-vdsigmas"
 issues = "https://github.com/mtryan83/sidm-vdisgmas/issues/new"
 
+[project.optional-dependencies]
+tests = ["pytest", "pytest-cov"]
+docs = [
+  "mkdocs-material"
+]
+
+[tool.pytest.ini_options]
+addopts = "--doctest-modules"
+
+[tool.setuptools]
+packages = ["sidm_vdsigmas", "CLASSICS",]
+
 [tool.setuptools.dynamic]
 readme = {file = ["README.md"]}
 
@@ -30,3 +42,19 @@ readme = {file = ["README.md"]}
 version_scheme = "guess-next-dev"
 local_scheme = "dirty-tag"
 write_to = "sidm_vdsigmas/_version.py"
+
+[tool.ruff]
+exclude = [
+    "CLASSICS",
+    ".git",
+    ".git-rewrite",
+    ".ipynb_checkpoints",
+    ".ruff_cache",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "_build",
+    "build",
+    "dist",
+    "venv",
+]

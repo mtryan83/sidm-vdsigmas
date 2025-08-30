@@ -7,16 +7,19 @@ This module implements Rutherford cross sections. Currently only the
 viscosity cross section is supported.
 """
 
+
 class Rutherford(Interaction):
     """Rutherford viscosity cross section
 
     The cross section is computed from the analytic dimensionless cross section
     defined in Yang 2023 (arXiv:2305.05067)
-        
+
     """
-    name = 'RutherfordV'
+
+    name = "RutherfordV"
     file_name = name
-    def __call__(self,v):
+
+    def __call__(self, v):
         """Compute the value of the cross section at the specified velocity
 
         Note that this is just a scaled version of hat(x).
@@ -34,9 +37,9 @@ class Rutherford(Interaction):
         """
         w = self.v0
         sigma0 = self.sigconst
-        return sigma0 * self.hat(v/w)
+        return sigma0 * self.hat(v / w)
 
-    def hat(self,x):
+    def hat(self, x):
         r"""Compute the value of the dimensionless component of the cross section at the specified dimensionless velocity
 
         Inputs:
@@ -47,5 +50,5 @@ class Rutherford(Interaction):
             unyt_like(dimensionless)
             Value of the cross section at the specified velocity. Will have same shape as v
         """
-        x = np.maximum(x,1/50)
-        return 6*x**-6*(-2*x**2 + (2+x**2)*np.log(1+x**2))
+        x = np.maximum(x, 1 / 50)
+        return 6 * x**-6 * (-2 * x**2 + (2 + x**2) * np.log(1 + x**2))
