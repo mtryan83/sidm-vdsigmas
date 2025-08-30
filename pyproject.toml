@@ -18,11 +18,6 @@ dependencies = [
 ]
 dynamic = ["version","readme"]
 
-[project.optional-dependencies]
-docs = [
-  "mkdocs-material"
-]
-
 [project.urls]
 home = "https://github.com/mtryan83/sidm-vdsigmas"
 source = "https://github.com/mtryan83/sidm-vdsigmas"
@@ -30,6 +25,9 @@ issues = "https://github.com/mtryan83/sidm-vdisgmas/issues/new"
 
 [project.optional-dependencies]
 tests = ["pytest", "pytest-cov"]
+docs = [
+  "mkdocs-material"
+]
 
 [tool.pytest.ini_options]
 addopts = "--doctest-modules"
