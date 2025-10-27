@@ -108,7 +108,7 @@ class Interaction(object):
             sigconst = sigconst * sigunit
         if m is not None and mphi is not None and alphaX is not None:
             w = mphi / m
-            sigconst = (hbar / c0) ** 2 * np.pi * alphaX**2 / (w**2 * m**3)
+            sigconst = (hbar / c0) ** 2 * np.pi * alphaX**2 / (w**4 * m**3)
         if isinstance(w, (unyt_array, unyt_quantity)) and w.units != dimensionless:
             self.v0 = w
             w = w / c0
@@ -116,7 +116,7 @@ class Interaction(object):
             self.v0 = w * c0
         if m is None:
             self.m = (
-                ((hbar / c0) ** 2 * np.pi * alphaX**2 / (w**2 * sigconst)) ** (1 / 3)
+                ((hbar / c0) ** 2 * np.pi * alphaX**2 / (w**4 * sigconst)) ** (1 / 3)
             ).to("GeV/c**2")
         if mphi is None:
             self.mphi = w * self.m
