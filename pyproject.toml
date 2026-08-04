@@ -78,6 +78,10 @@ check = "ruff check --fix"
 pylint = "ty check"
 style = [{task="format"}, {task="check"}, {task="pylint"}]
 
+[tool.pixi.feature.docs.dependencies]
+mkdocs = ">=1.6.1,<2"
+mkdocs-material = ">=9.7.7,<10"
+
 [tool.pixi.environments]
 default = { features = ["tests", "style"], solve-group = "prod" }
 docs = { features = ["docs"], solve-group = "prod" }

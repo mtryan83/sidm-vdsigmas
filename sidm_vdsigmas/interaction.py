@@ -432,6 +432,26 @@ class Interaction:
             self._gen_n_splines()
         return 10 ** self.xofnspl(n)
 
+    def eff(self, vmax):
+        """
+        Compute the effective constant cross section
+
+        Compute the constant effective cross section from Yang 2022 (2205.03392)
+        defined as $sigma_0 * K_5(v_{c,0}=0.64 * v_{\rm max})$
+
+        Inputs:
+            vmax: unyt_like
+            The max velocity of a halo
+
+        Returns:
+            unyt_like
+            The constant effective cross section
+        """
+        vmax = vmax if isinstance(vmax, unyt_array|unyt_quantity) else unyt_array(vmax, "km/s")
+        # v_c0 = 0.64 * vmax
+        x_s = 0.64 * vmax / self.v0
+        return self.sigconst * self.K5(x_s)
+
     def dim_sigma_hat(self, what, *, C=0.6):
         """Compute the dimensionful effective cross section
 
