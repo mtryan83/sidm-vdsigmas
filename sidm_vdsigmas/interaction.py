@@ -1,19 +1,26 @@
+from __future__ import annotations
+
 import abc
-import numpy as np
-
+from enum import Enum, auto
 from functools import cache
+from typing import ClassVar
 
-import scipy.special as special
-import scipy.interpolate as interpolate
-
+import numpy as np
+from scipy import interpolate, special
+from unyt import (
+    gravitational_constant as G0,
+)
+from unyt import (
+    reduced_planck_constant as hbar,
+)
+from unyt import (
+    speed_of_light as c0,
+)
 from unyt import (
     unyt_array,
     unyt_quantity,
-    speed_of_light as c0,
-    reduced_planck_constant as hbar,
-    gravitational_constant as G0,
 )
-from unyt.dimensions import length, dimensionless
+from unyt.dimensions import dimensionless
 
 from .sidm import SIDM
 
@@ -24,8 +31,125 @@ this module. Please see :doc:`Cross_Sections` and :doc:`Tutorials` for more info
 
 sigunit = unyt_quantity(1, "cm**2/g")
 
+# parameter combinations:
+#  1. particle physics
+#     a. m, mphi, alphaX
+#     b. m, w, alphaX
+#     c. mphi, w, alphaX
+#  4. sigconst, w - SIDM generic
+#  5. sigconst, mphi - SIDM variant
+#  6. sidm - SIDM object
 
-class Interaction(object):
+
+class INPUT_OPTIONS(Enum):
+    PARTICLE_PHYSICS = auto()
+    SIDM_GENERIC = auto()
+    SIDM_VARIANT = auto()
+    SIDM_OBJECT = auto()
+    UNKNOWN = auto()
+
+
+def _classify_input(
+    *, m=None, mphi=None, alphaX=None, w=None, sigconst=None, sidm: SIDM | None = None
+) -> INPUT_OPTIONS:
+    if sidm is not None:
+        return INPUT_OPTIONS.SIDM_OBJECT
+    if sum(x is None for x in [m, mphi, w]) > 2:
+        return INPUT_OPTIONS.PARTICLE_PHYSICS
+    if sigconst is not None:
+        if w is not None:
+            return INPUT_OPTIONS.SIDM_GENERIC
+        elif mphi is not None:
+            return INPUT_OPTIONS.SIDM_VARIANT
+    return INPUT_OPTIONS.UNKNOWN
+
+
+def _process_input(
+    *, m=None, mphi=None, alphaX=None, w=None, sigconst=None, sidm: SIDM | None = None
+) -> tuple[unyt_quantity, unyt_quantity, SIDM]:
+
+    input_type = _classify_input(
+        m=m, mphi=mphi, alphaX=alphaX, w=w, sigconst=sigconst, sidm=sidm
+    )
+
+    v0 = None
+
+    match input_type:
+        case INPUT_OPTIONS.PARTICLE_PHYSICS:
+            # 2 of (m, mphi, w) and alphaX
+            sidm = SIDM(mX=m, mphi=mphi, alphaX=alphaX, w=w)
+            sigconst = (
+                (hbar / c0) ** 2 * np.pi * sidm.alphaX**2 / (sidm.w**2 * sidm.mX**3)
+            )
+        case INPUT_OPTIONS.SIDM_OBJECT:
+            # sidm is not none
+            ...
+        case INPUT_OPTIONS.SIDM_GENERIC:
+            # sigconst and w
+            assert sigconst is not None
+            assert w is not None
+            w = (
+                unyt_quantity(w, "km/s")
+                if not isinstance(sigconst, unyt_array | unyt_quantity)
+                and not isinstance(w, unyt_array | unyt_quantity)
+                else w
+            )
+            if isinstance(w, unyt_quantity | unyt_array) and w.units != dimensionless:
+                v0 = w
+                w = w / c0
+            sigconst = (
+                sigconst
+                if isinstance(sigconst, unyt_quantity | unyt_array)
+                else unyt_quantity(sigconst * sigunit)
+            )
+            alphaX = 1.0 if alphaX is None else float(alphaX)
+            m = unyt_quantity(
+                (
+                    ((hbar / c0) ** 2 * np.pi * alphaX**2 / (w**2 * sigconst))
+                    ** (1 / 3)
+                ).to("GeV/c**2")
+            )
+            sidm = SIDM(mX=m, alphaX=alphaX, w=w)
+        case INPUT_OPTIONS.SIDM_VARIANT:
+            # sigconst and mphi
+            assert sigconst is not None
+            assert mphi is not None
+            mphi = (
+                unyt_quantity(mphi, "GeV/c**2")
+                if not isinstance(sigconst, unyt_array | unyt_quantity)
+                and not isinstance(mphi, unyt_array | unyt_quantity)
+                else mphi
+            )
+            sigconst = (
+                sigconst
+                if isinstance(sigconst, unyt_quantity | unyt_array)
+                else unyt_quantity(sigconst * sigunit)
+            )
+            alphaX = 1.0 if alphaX is None else float(alphaX)
+            m = unyt_quantity(
+                ((hbar / c0) ** 2 * np.pi * alphaX**2 / (mphi**2 * sigconst)).to(
+                    "GeV/c**2"
+                )
+            )
+            sidm = SIDM(mX=m, alphaX=alphaX, mphi=mphi)
+        case INPUT_OPTIONS.UNKNOWN:
+            raise ValueError(
+                "Don't know how to parse input options"
+                f" {m=} {mphi=} {alphaX=} {w=} {sigconst=} {sidm=}"
+            )
+    assert sidm is not None
+
+    v0 = sidm.w * c0 if v0 is None else v0
+    sigconst = (
+        (hbar / c0) ** 2 * np.pi * sidm.alphaX**2 / (sidm.w**2 * sidm.mX**3)
+        if sigconst is None
+        else sigconst
+    )
+
+    return sigconst, v0, sidm
+
+
+class Interaction:
     r"""Abstract base class for creating cross sections.
 
     Specific cross sections can be implemented by inheriting this class. These
@@ -63,6 +187,7 @@ class Interaction(object):
         sigconst nor w have have units, **both are assumed to have units**
 
         sidm: SIDM, optional
+        disable_warning=False,
         SIDM parameter class instance.  Effectively the same as providing
         m, mphi, alphaX, and w
 
@@ -70,6 +195,20 @@ class Interaction(object):
         Flag to turn off the warning about neither sigconst nor w having
         units. Default False
     """
+
+    sigconst: unyt_quantity
+    m: unyt_quantity
+    mphi: unyt_quantity
+    w: float
+    v0: unyt_quantity
+    alphaX: float
+    sidm: SIDM
+
+    _subclasses: ClassVar[dict[str, type[Interaction]]] = {}
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls._subclasses[cls.__name__] = cls
 
     def __init__(
         self,
@@ -80,55 +219,17 @@ class Interaction(object):
         sigconst=None,
         w=None,
         sidm=None,
-        disable_warning=False,
     ):
-        if len({m, mphi, alphaX, sigconst, w, sidm}) == 1:
-            # If all parameters are None, this will be just {None}
-            raise ValueError("Must provide at least one set of parameters :)")
-        self.sidm = None
-        if sidm is not None:
-            m = sidm.mX
-            mphi = sidm.mphi
-            alphaX = sidm.alphaX
-            w = sidm.w
-            self.sidm = sidm
-        self.m = m
-        self.mphi = mphi
-        alphaX = alphaX if alphaX is not None else 1
-        self.alphaX = alphaX
-        if sigconst is not None and not isinstance(
-            sigconst, (unyt_array, unyt_quantity)
-        ):
-            # if sigconst and w are supplied, but *neither* have units
-            # assume *both* should have units
-            if w is not None and not isinstance(w, (unyt_array, unyt_quantity)):
-                w = unyt_quantity(w, "km/s")
-                if not disable_warning:
-                    print("Neither sigconst nor w had units. Assuming both should.")
-            sigconst = sigconst * sigunit
-        if m is not None and mphi is not None and alphaX is not None:
-            w = mphi / m
-            sigconst = (hbar / c0) ** 2 * np.pi * alphaX**2 / (w**2 * m**3)
-        if isinstance(w, (unyt_array, unyt_quantity)) and w.units != dimensionless:
-            self.v0 = w
-            w = w / c0
-        else:
-            self.v0 = w * c0
-        if m is None:
-            self.m = (
-                ((hbar / c0) ** 2 * np.pi * alphaX**2 / (w**2 * sigconst)) ** (1 / 3)
-            ).to("GeV/c**2")
-        if mphi is None:
-            self.mphi = w * self.m
-        self.w = w
-        if self.sidm is None:
-            self.sidm = SIDM(mX=self.m, mphi=self.mphi, alphaX=self.alphaX, w=self.w)
-        sigconst = (
-            sigconst.to("cm**2")
-            if sigconst.units.dimensions / length**2 == 1
-            else sigconst.to("cm**2/g")
+        sigconst, v0, sidm = _process_input(
+            m=m, mphi=mphi, alphaX=alphaX, sigconst=sigconst, w=w, sidm=sidm
         )
+        self.sidm = sidm
         self.sigconst = sigconst
+        self.m = sidm.mX
+        self.mphi = sidm.mphi
+        self.alphaX = sidm.alphaX
+        self.v0 = v0
+        self.w = sidm.w
 
     @property
     @abc.abstractmethod
@@ -389,6 +490,8 @@ class Interaction(object):
         """
         part1 = self.dim_sigma_hat(what, C=C)
         if Mn is not None:
+            if rn is None:
+                raise ValueError("Need to provide both Mn and rn")
             return (part1 * (Mn / (4 * np.pi * rn**2))).to("dimensionless").v
         return (part1 * np.sqrt(rhon / (4 * np.pi * G0)) * vn).to("dimensionless").v
 
