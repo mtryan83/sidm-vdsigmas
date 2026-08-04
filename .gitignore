@@ -194,5 +194,8 @@ pyrightconfig.json
 .pixi/*
 !.pixi/config.toml
 
+# version info
+_version.py
+
 # vscode
 .vscode
