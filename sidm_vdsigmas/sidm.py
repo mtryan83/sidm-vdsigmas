@@ -1,4 +1,7 @@
+from typing import cast
+
 import numpy as np
+from unyt.array import unyt_array, unyt_quantity
 
 """
 Module for the SIDM class and related functionality

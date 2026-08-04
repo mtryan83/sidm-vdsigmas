@@ -1,7 +1,7 @@
+# noqa: N999
 from unyt import speed_of_light as c0
 
 import CLASSICS.cross_sections as classics
-
 from sidm_vdsigmas.interaction import Interaction
 
 """
@@ -39,6 +39,9 @@ class CLASSIC(Interaction):
         1/2 if particles are identical ('T' or 'V' modes), 1 otherwise
     """
 
+    mode = None
+    sign = None
+
     def __init__(self, *args, mode=None, sign=None, **kwargs):
         super().__init__(*args, **kwargs)
         if mode is None:
@@ -72,7 +75,6 @@ class CLASSIC(Interaction):
         return f"CLASSIC{sign}{cls.mode}"
 
     def __call__(self, v):
-        return self.sigscale * self.sigma_nd(v)
         """Compute the value of the cross section at the specified velocity
 
         Note that this should just be a scaled version of hat(x), however
