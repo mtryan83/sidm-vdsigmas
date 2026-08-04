@@ -190,3 +190,12 @@ poetry.toml
 pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python,jupyternotebooks
+# pixi environments
+.pixi/*
+!.pixi/config.toml
+
+# version info
+_version.py
+
+# vscode
+.vscode
