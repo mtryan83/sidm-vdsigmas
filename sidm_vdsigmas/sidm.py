@@ -36,32 +36,50 @@ class SIDM:
         are inconsistent.
     """
 
-    def __init__(self, **kwargs):
-        self.mX = None
-        self.mphi = None
-        self.alphaX = None
-        self.w = None
-        for k, v in kwargs.items():
-            self.__dict__[k] = v
-        self.check_consistency()
+    mX: unyt_quantity
+    mphi: unyt_quantity
+    alphaX: float
+    w: float
 
-    def check_consistency(self):
-        """Check that all parameters are present and that w and mphi are consistent"""
-        # should probably use hasattr and getattr
-        sd = self.__dict__
-        if "w" in sd and ("mphi" not in sd or sd["mphi"] is None):
-            self.mphi = self.w * self.mX
-        elif "mphi" in sd and ("w" not in sd or sd["w"] is None):
-            self.w = self.mphi / self.mX
-        elif "mphi" in sd and "w" in sd:
-            if not np.isclose(self.w, self.mphi / self.mX):
+    def __init__(
+        self,
+        *,
+        mX: unyt_quantity | None = None,
+        mphi: unyt_quantity | None = None,
+        alphaX: float | None = None,
+        w: float | unyt_quantity | None = None,
+    ):
+        self.alphaX = 0.01 if alphaX is None else alphaX
+        if sum(x is None for x in [mX, mphi, w]) > 1:
+            raise ValueError("Must provide two of w, mphi, mX")
+        w = w.v if isinstance(w, unyt_quantity | unyt_array) else w
+        if w is None:
+            assert mX is not None
+            assert mphi is not None
+            self.mX = mX
+            self.mphi = mphi
+            self.w = cast(unyt_quantity, mphi / mX).v
+        elif mX is None:
+            assert mphi is not None
+            assert w is not None
+            self.mphi = mphi
+            self.w = w
+            self.mX = unyt_quantity(mphi / w)
+        elif mphi is None:
+            assert w is not None
+            assert mX is not None
+            self.mX = mX
+            self.w = w
+            self.mphi = unyt_quantity(mX * w)
+        else:
+            self.mX = mX
+            self.mphi = mphi
+            self.w = w
+            if not np.isclose(unyt_quantity(self.mphi / self.mX).v, w):
                 raise ValueError(
-                    f"w and mphi are inconsistent: {self.w=:.4} mphi/mX={self.mphi / self.mX:.4}"
+                    f"{w=} and mphi/mX={self.mphi / self.mX} are inconsistent!"
                 )
-        for a in ["mX", "mphi", "alphaX", "w"]:
-            if not hasattr(self, a) or getattr(self, a) is None:
-                raise ValueError(f"Attribute {a} not provided!")
 
     def __repr__(self):
         phiunit = "GeV/c**2" if np.log10(self.mphi.to("MeV/c**2")) > 1 else "MeV/c**2"
-        return f"SIDM(mχ={self.mX:.4},mϕ={self.mphi.to(phiunit):.4},w={self.w.v:.4},α={self.alphaX})"
+        return f"SIDM(mχ={self.mX:.4},mϕ={self.mphi.to(phiunit):.4},w={self.w:.4},α={self.alphaX})"
