@@ -54,7 +54,7 @@ def _classify_input(
 ) -> INPUT_OPTIONS:
     if sidm is not None:
         return INPUT_OPTIONS.SIDM_OBJECT
-    if sum(x is None for x in [m, mphi, w]) > 2:
+    if sum(x is None for x in [m, mphi, w]) < 2:
         return INPUT_OPTIONS.PARTICLE_PHYSICS
     if sigconst is not None:
         if w is not None:
@@ -78,9 +78,7 @@ def _process_input(
         case INPUT_OPTIONS.PARTICLE_PHYSICS:
             # 2 of (m, mphi, w) and alphaX
             sidm = SIDM(mX=m, mphi=mphi, alphaX=alphaX, w=w)
-            sigconst = (
-                (hbar / c0) ** 2 * np.pi * sidm.alphaX**2 / (sidm.w**2 * sidm.mX**3)
-            )
+            sigconst = None
         case INPUT_OPTIONS.SIDM_OBJECT:
             # sidm is not none
             ...
@@ -105,7 +103,7 @@ def _process_input(
             alphaX = 1.0 if alphaX is None else float(alphaX)
             m = unyt_quantity(
                 (
-                    ((hbar / c0) ** 2 * np.pi * alphaX**2 / (w**2 * sigconst))
+                    ((hbar / c0) ** 2 * 4 * np.pi * alphaX**2 / (w**4 * sigconst))
                     ** (1 / 3)
                 ).to("GeV/c**2")
             )
@@ -127,7 +125,7 @@ def _process_input(
             )
             alphaX = 1.0 if alphaX is None else float(alphaX)
             m = unyt_quantity(
-                ((hbar / c0) ** 2 * np.pi * alphaX**2 / (mphi**2 * sigconst)).to(
+                sigconst / ((hbar / c0) ** 2 * 4 * np.pi * alphaX**2 / mphi**4).to(
                     "GeV/c**2"
                 )
             )
@@ -140,11 +138,13 @@ def _process_input(
     assert sidm is not None
 
     v0 = sidm.w * c0 if v0 is None else v0
+    v0.convert_to_units("km/s")
     sigconst = (
-        (hbar / c0) ** 2 * np.pi * sidm.alphaX**2 / (sidm.w**2 * sidm.mX**3)
+        (hbar / c0) ** 2 * 4 * np.pi * sidm.alphaX**2 / (sidm.w**4 * sidm.mX**3)
         if sigconst is None
         else sigconst
     )
+    sigconst.convert_to_cgs()
 
     return sigconst, v0, sidm
 
