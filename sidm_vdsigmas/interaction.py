@@ -54,7 +54,7 @@ def _classify_input(
 ) -> INPUT_OPTIONS:
     if sidm is not None:
         return INPUT_OPTIONS.SIDM_OBJECT
-    if sum(x is None for x in [m, mphi, w]) > 2:
+    if sum(x is None for x in [m, mphi, w]) < 2:
         return INPUT_OPTIONS.PARTICLE_PHYSICS
     if sigconst is not None:
         if w is not None:
