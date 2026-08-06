@@ -125,9 +125,8 @@ def _process_input(
             )
             alphaX = 1.0 if alphaX is None else float(alphaX)
             m = unyt_quantity(
-                sigconst / ((hbar / c0) ** 2 * 4 * np.pi * alphaX**2 / mphi**4).to(
-                    "GeV/c**2"
-                )
+                sigconst
+                / ((hbar / c0) ** 2 * 4 * np.pi * alphaX**2 / mphi**4).to("GeV/c**2")
             )
             sidm = SIDM(mX=m, alphaX=alphaX, mphi=mphi)
         case INPUT_OPTIONS.UNKNOWN:
@@ -447,7 +446,11 @@ class Interaction:
             unyt_like
             The constant effective cross section
         """
-        vmax = vmax if isinstance(vmax, unyt_array|unyt_quantity) else unyt_array(vmax, "km/s")
+        vmax = (
+            vmax
+            if isinstance(vmax, unyt_array | unyt_quantity)
+            else unyt_array(vmax, "km/s")
+        )
         # v_c0 = 0.64 * vmax
         x_s = 0.64 * vmax / self.v0
         return self.sigconst * self.K5(x_s)
