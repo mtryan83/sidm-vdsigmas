@@ -82,6 +82,9 @@ style = [{task="format"}, {task="check"}, {task="pylint"}]
 mkdocs = ">=1.6.1,<2"
 mkdocs-material = ">=9.7.7,<10"
 
+[tool.pixi.feature.tests.dependencies]
+pandas = ">=3.0.5,<4"
+
 [tool.pixi.environments]
 default = { features = ["tests", "style"], solve-group = "prod" }
 docs = { features = ["docs"], solve-group = "prod" }

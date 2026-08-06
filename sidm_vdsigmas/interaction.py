@@ -125,9 +125,8 @@ def _process_input(
             )
             alphaX = 1.0 if alphaX is None else float(alphaX)
             m = unyt_quantity(
-                sigconst / ((hbar / c0) ** 2 * 4 * np.pi * alphaX**2 / mphi**4).to(
-                    "GeV/c**2"
-                )
+                sigconst
+                / ((hbar / c0) ** 2 * 4 * np.pi * alphaX**2 / mphi**4).to("GeV/c**2")
             )
             sidm = SIDM(mX=m, alphaX=alphaX, mphi=mphi)
         case INPUT_OPTIONS.UNKNOWN:
@@ -203,6 +202,12 @@ class Interaction:
     v0: unyt_quantity
     alphaX: float
     sidm: SIDM
+
+    x_s_scaling: float = 0.8233
+    """
+    Numerical scaling factor that multplies x_s in K5 and Keff.
+    Default is 0.8233 to better match Gad-Nasr
+    """
 
     _subclasses: ClassVar[dict[str, type[Interaction]]] = {}
 
@@ -314,8 +319,7 @@ class Interaction:
             float | array
             The quantity K_5 evaluated at x_s
         """
-        # For some reason these appear to be off. Multiplying v_s by 0.8233 helps
-        return self.Kn(0.8233 * x_s, n=5)
+        return self.Kn(x_s * self.x_s_scaling, n=5)
 
     def Keff(self, x_s):
         r"""Compute the second order K_eff term
@@ -334,7 +338,7 @@ class Interaction:
             K_{eff}^{(2)} = \frac{28 K_5^2 + 80*K_5*K_9 - 64*K7^2}{77*K5 - 112*K7 + 80*K9}
 
         """
-        x_s = x_s * 0.8233
+        x_s = x_s * self.x_s_scaling
         K5 = self.Kn(x_s)
         K7 = self.Kn(x_s, n=7)
         K9 = self.Kn(x_s, n=9)
@@ -437,7 +441,11 @@ class Interaction:
         Compute the effective constant cross section
 
         Compute the constant effective cross section from Yang 2022 (2205.03392)
-        defined as $sigma_0 * K_5(v_{c,0}=0.64 * v_{\rm max})$
+        defined as $sigma_0 * K_5(v_{c,0}=0.64 * v_{\rm max})$. 
+
+        Note that this will give _slightly_ different values due to updated K5
+        definition (from Gad-Nasr). You can change Interaction._x_s_scaling from
+        0.8233 to 1 to obtain the results from Yang.
 
         Inputs:
             vmax: unyt_like
@@ -447,7 +455,11 @@ class Interaction:
             unyt_like
             The constant effective cross section
         """
-        vmax = vmax if isinstance(vmax, unyt_array|unyt_quantity) else unyt_array(vmax, "km/s")
+        vmax = (
+            vmax
+            if isinstance(vmax, unyt_array | unyt_quantity)
+            else unyt_array(vmax, "km/s")
+        )
         # v_c0 = 0.64 * vmax
         x_s = 0.64 * vmax / self.v0
         return self.sigconst * self.K5(x_s)
